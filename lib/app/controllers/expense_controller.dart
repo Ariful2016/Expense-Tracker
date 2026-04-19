@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
-import '../core/theme/app_theme.dart';
 import '../data/models/expense_model.dart';
 
 class ExpenseController extends GetxController {
@@ -130,8 +129,6 @@ class ExpenseController extends GetxController {
   }
 
   void _load() {
-    //expenses.value = _expBox.values.toList();
-    //categories.value = _catBox.values.toList();
     final list = _catBox.values.toList();
 
     list.sort((a, b) => a.order.compareTo(b.order));
