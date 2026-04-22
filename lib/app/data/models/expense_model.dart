@@ -25,20 +25,20 @@ class ExpenseModel extends HiveObject {
 @HiveType(typeId: 1)
 class CategoryModel extends HiveObject {
   @HiveField(0) String id;
-  @HiveField(6) int order;
-  @HiveField(1) String name;
-  @HiveField(2) int colorValue;
-  @HiveField(3) int iconCodePoint;
-  @HiveField(4) double budgetLimit;
-  @HiveField(5) bool isCustom;
-  @HiveField(6) List<String> subItems;// sub-items like Rent->Rent, Service charge...
+  @HiveField(1) int order;
+  @HiveField(2) String name;
+  @HiveField(3) int colorValue;
+  @HiveField(4) String icon;
+  @HiveField(5) double budgetLimit;
+  @HiveField(6) bool isCustom;
+  @HiveField(7) List<String> subItems;// sub-items like Rent->Rent, Service charge...
 
   CategoryModel({
     required this.id,
     required this.order,
     required this.name,
     required this.colorValue,
-    required this.iconCodePoint,
+    required this.icon,
     this.budgetLimit = 0,
     this.isCustom = false,
     List<String>? subItems,

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import '../data/models/expense_model.dart';
+import '../utils/icon_mapper.dart';
 
 class ExpenseController extends GetxController {
   late Box<ExpenseModel> _expBox;
@@ -124,7 +125,10 @@ class ExpenseController extends GetxController {
     _catBox = await Hive.openBox<CategoryModel>('categories_v2');
     _settingsBox = await Hive.openBox('settings_v2');
     monthlyBudget.value = _settingsBox.get('budget', defaultValue: 30000.0);
-    if (_catBox.isEmpty) _seedCategories();
+    if (_catBox.isEmpty || _catBox.values.first.order == 0) {
+      await _catBox.clear();
+      _seedCategories();
+    }
     _load();
   }
 
@@ -133,17 +137,21 @@ class ExpenseController extends GetxController {
 
     list.sort((a, b) => a.order.compareTo(b.order));
 
+
+
     categories.assignAll(list);
+    for (final cat in categories) {
+      print("Read ${cat.name} with order ${cat.order}");
+    }
     expenses.assignAll(_expBox.values.toList());
   }
 
-  // Default categories matching spreadsheet
   static List<Map<String, dynamic>> get defaultCategories => [
     {
       'id': 1,
       'name': 'Home',
       'color': 0xFF2F6FED,
-      'icon': 0xe88a,
+      'icon': 'home',
       'subs': [
         'Rent',
         'Gas Bill',
@@ -158,41 +166,83 @@ class ExpenseController extends GetxController {
       'id': 2,
       'name': 'Home Bazar',
       'color': 0xFF18C76E,
-      'icon': 0xe59c,
-      'subs': ['vegetables', 'Fish', 'Meat', 'Oil', 'Fruits', 'Rice', 'Soap' ,'shampoo', 'Other']
+      'icon': 'grocery',
+      'subs': [
+        'Vegetables',
+        'Fish',
+        'Meat',
+        'Oil',
+        'Fruits',
+        'Rice',
+        'Soap',
+        'Shampoo',
+        'Other',
+      ],
     },
     {
       'id': 3,
       'name': 'Outside Food',
       'color': 0xFFFF6D00,
-      'icon': 0xef55,
+      'icon': 'food',
       'subs': ['Office Party', 'Others', 'Iftar', 'Office Boishaki Voj'],
     },
     {
       'id': 4,
       'name': 'Medical',
       'color': 0xFFFF5252,
-      'icon': 0xe548,
+      'icon': 'medical',
       'subs': ['Gym Fee', 'Fees', 'Medicines'],
     },
-
-    {'id': 5, 'name': 'Shopping', 'color': 0xFFE91E63, 'icon': 0xef69, 'subs': []},
-    {'id': 6, 'name': 'Education', 'color': 0xFF3F51B5, 'icon': 0xe80c, 'subs': []},
-    {'id': 7, 'name': 'Transport', 'color': 0xFF00BCD4, 'icon': 0xe1d0, 'subs': []},
-    {'id': 8, 'name': 'Savings', 'color': 0xFF4CAF50, 'icon': 0xe227, 'subs': []},
-    {'id': 9, 'name': 'Entertainment', 'color': 0xFFFFB300, 'icon': 0xe040, 'subs': []},
+    {
+      'id': 5,
+      'name': 'Shopping',
+      'color': 0xFFE91E63,
+      'icon': 'shopping',
+      'subs': [],
+    },
+    {
+      'id': 6,
+      'name': 'Education',
+      'color': 0xFF3F51B5,
+      'icon': 'education',
+      'subs': [],
+    },
+    {
+      'id': 7,
+      'name': 'Transport',
+      'color': 0xFF00BCD4,
+      'icon': 'transport',
+      'subs': [],
+    },
+    {
+      'id': 8,
+      'name': 'Savings',
+      'color': 0xFF4CAF50,
+      'icon': 'savings',
+      'subs': [],
+    },
+    {
+      'id': 9,
+      'name': 'Entertainment',
+      'color': 0xFFFFB300,
+      'icon': 'entertainment',
+      'subs': [],
+    },
   ];
 
   void _seedCategories() {
     for (final d in defaultCategories) {
+      final order = (d['id'] as int?) ?? 0;
       final cat = CategoryModel(
         id: const Uuid().v4(),
-        order: d['id'],
+        order: order,
         name: d['name'],
         colorValue: d['color'],
-        iconCodePoint: d['icon'],
+        icon: d['icon'],
         subItems: List<String>.from(d['subs']),
       );
+      print("Saving ${cat.name} with order ${cat.order}"); // ✅ debug
+
       _catBox.put(cat.id, cat);
     }
   }
@@ -233,7 +283,7 @@ class ExpenseController extends GetxController {
   Future<void> addCategory({
     required String name,
     required int colorValue,
-    required int iconCodePoint,
+    required String iconCodePoint,
     double budgetLimit = 0,
     List<String>? subItems,
   }) async {
@@ -245,7 +295,7 @@ class ExpenseController extends GetxController {
       order: maxOrder + 1,
       name: name,
       colorValue: colorValue,
-      iconCodePoint: iconCodePoint,
+      icon: iconCodePoint,
       budgetLimit: budgetLimit,
       isCustom: true,
       subItems: subItems ?? [],
@@ -294,8 +344,8 @@ class ExpenseController extends GetxController {
   Color colorOf(String catId) =>
       Color(categoryById(catId)?.colorValue ?? 0xFF2F6FED);
 
-  IconData iconOf(String catId) => IconData(
-    categoryById(catId)?.iconCodePoint ?? 0xe88a,
-    fontFamily: 'MaterialIcons',
-  );
+  IconData iconOf(String catId) {
+    final key = categoryById(catId)?.icon;
+    return AppIcons.map[key] ?? Icons.category;
+  }
 }

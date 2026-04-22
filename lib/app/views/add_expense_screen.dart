@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../controllers/expense_controller.dart';
 import '../core/theme/app_theme.dart';
 import '../data/models/expense_model.dart';
+import '../utils/icon_mapper.dart';
 class AddExpenseScreen extends StatefulWidget {
   final ExpenseModel? existing;
   const AddExpenseScreen({super.key, this.existing});
@@ -135,7 +136,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   itemBuilder: (_, i) {
                     final cat    = ec.categories[i];
                     final color  = Color(cat.colorValue);
-                    final icon   = IconData(cat.iconCodePoint, fontFamily: 'MaterialIcons');
+                    final icon   =   Icon(
+                      AppIcons.map[cat.icon] ?? Icons.category,
+                    );
                     final isSelected = _catId == cat.id;
                     return GestureDetector(
                       onTap: () => setState(() { _catId = cat.id; _subItem = ''; }),
@@ -147,7 +150,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           border: isSelected ? Border.all(color: color, width: 1.5) : null,
                         ),
                         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(icon, color: isSelected ? color : AppTheme.textSecondary, size: 22),
+                          //Icon(icon, color: isSelected ? color : AppTheme.textSecondary, size: 22),
+                          Icon(
+                            AppIcons.map[cat.icon] ?? Icons.category,
+                            color: isSelected ? color : AppTheme.textSecondary,
+                            size: 22,
+                          ),
                           const SizedBox(height: 4),
                           Text(cat.name, textAlign: TextAlign.center,
                               style: TextStyle(fontSize: 9, color: isSelected ? color : AppTheme.textSecondary,

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../controllers/expense_controller.dart';
 import '../core/theme/app_theme.dart';
 import '../utils/currency_utils.dart';
+import '../utils/icon_mapper.dart';
 
 class BudgetSummaryScreen extends StatelessWidget {
   const BudgetSummaryScreen({super.key});
@@ -56,9 +57,11 @@ class BudgetSummaryScreen extends StatelessWidget {
           itemBuilder: (_, i) {
             final cat    = ec.categories[i];
             final color  = Color(cat.colorValue);
-            final icon   = IconData(cat.iconCodePoint, fontFamily: 'MaterialIcons');
+            final icon   =  Icon(
+              AppIcons.map[cat.icon] ?? Icons.category,
+            );
             final spent  = ec.spentForCategory(cat.id);
-            final budget = cat.budgetLimit > 0 ? cat.budgetLimit : (ec.monthlyBudget.value / ec.categories.length);
+            final budget = cat.budgetLimit > 0 ? cat.budgetLimit : 0.0;
             final pct    = (spent / budget).clamp(0.0, 1.0);
             final exps   = ec.monthExpenses.where((e) => e.categoryId == cat.id).toList();
 
@@ -71,7 +74,11 @@ class BudgetSummaryScreen extends StatelessWidget {
                 child: ExpansionTile(
                   leading: Container(width: 40, height: 40,
                       decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-                      child: Icon(icon, color: color, size: 20)),
+                      child: Icon(
+                        AppIcons.map[cat.icon] ?? Icons.category,
+                        color: color,
+                        size: 20,
+                      )),//Icon(icon, color: color, size: 20)),
                   title: Row(children: [
                     Expanded(child: Text(cat.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppTheme.textPrimary))),
                     Text(CurrencyUtils.format(budget - spent),

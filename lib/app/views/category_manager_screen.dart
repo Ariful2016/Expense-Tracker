@@ -5,6 +5,7 @@ import '../controllers/expense_controller.dart';
 import '../core/theme/app_theme.dart';
 import '../data/models/expense_model.dart';
 import '../utils/currency_utils.dart';
+import '../utils/icon_mapper.dart';
 
 class CategoryManagerScreen extends StatelessWidget {
   const CategoryManagerScreen({super.key});
@@ -52,7 +53,6 @@ class CategoryManagerScreen extends StatelessWidget {
 
   Widget _buildCategoryCard(BuildContext context, ExpenseController ec, CategoryModel cat, ExpenseController ctrl) {
     final color   = Color(cat.colorValue);
-    final icon    = IconData(cat.iconCodePoint, fontFamily: 'MaterialIcons');
     final spent   = ec.spentForCategory(cat.id);
     final budget  = cat.budgetLimit;
     final pct     = budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
@@ -71,7 +71,11 @@ class CategoryManagerScreen extends StatelessWidget {
           leading: Container(
             width: 44, height: 44,
             decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(
+              AppIcons.map[cat.icon] ?? Icons.category,
+              color: color,
+              size: 22,
+            ),
           ),
           title: Text(cat.name, style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary, fontSize: 15)),
           subtitle: Text('$expCount expenses this month', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
@@ -85,12 +89,14 @@ class CategoryManagerScreen extends StatelessWidget {
               onSelected: (v) {
                 if (v == 'edit')   _showAddCategorySheet(context, ec, existing: cat);
                 if (v == 'budget') _showBudgetDialog(context, ec, cat);
-                if (v == 'delete' && cat.isCustom) _confirmDelete(context, ec, cat);
+                //if (v == 'delete' && cat.isCustom) _confirmDelete(context, ec, cat);
+                if (v == 'delete') _confirmDelete(context, ec, cat);
               },
               itemBuilder: (_) => [
                 const PopupMenuItem(value:'edit',   child: Text('Edit')),
                 const PopupMenuItem(value:'budget', child: Text('Set Budget')),
-                if (cat.isCustom) const PopupMenuItem(value:'delete', child: Text('Delete', style: TextStyle(color: AppTheme.danger))),
+                //if (cat.isCustom) const PopupMenuItem(value:'delete', child: Text('Delete', style: TextStyle(color: AppTheme.danger))),
+                const PopupMenuItem(value:'delete', child: Text('Delete', style: TextStyle(color: AppTheme.danger))),
               ],
             ),
           ]),
@@ -180,7 +186,8 @@ void _showAddCategorySheet(BuildContext context, ExpenseController ec, {Category
   final subCtrl  = TextEditingController();
   final subs     = RxList<String>(existing?.subItems ?? []);
   final selColor = Rx<int>(existing?.colorValue ?? AppTheme.paletteColors[0].value);
-  final selIcon  = Rx<int>(existing?.iconCodePoint ?? _iconOptions[0]['code'] as int);
+  //final selIcon  = Rx<int>(existing?.icon ?? _iconOptions[0]['code'] as int);
+  final selIcon = RxString(existing?.icon ?? _iconOptions[0]['key']);
   final budgetCtrl = TextEditingController(text: existing?.budgetLimit != null && existing!.budgetLimit > 0 ? existing.budgetLimit.toInt().toString() : '');
 
   showModalBottomSheet(
@@ -246,13 +253,13 @@ void _showAddCategorySheet(BuildContext context, ExpenseController ec, {Category
 
             // Icon picker
             _label('Icon'),
-            GridView.builder(
+            /*GridView.builder(
               shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, mainAxisSpacing: 8, crossAxisSpacing: 8),
               itemCount: _iconOptions.length,
               itemBuilder: (_, i) {
                 final code = _iconOptions[i]['code'] as int;
-                final isSelected = selIcon.value == code;
+                final isSelected = selIcon.value == option['key'];
                 final color = Color(selColor.value);
                 return GestureDetector(
                   onTap: () => selIcon.value = code,
@@ -265,6 +272,42 @@ void _showAddCategorySheet(BuildContext context, ExpenseController ec, {Category
                     ),
                     child: Icon(IconData(code, fontFamily: 'MaterialIcons'),
                         color: isSelected ? color : AppTheme.textSecondary, size: 22),
+                  ),
+                );
+              },
+            ),*/
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 6,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+              ),
+              itemCount: _iconOptions.length,
+              itemBuilder: (_, i) {
+                final option = _iconOptions[i]; // ✅ use full object
+                final isSelected = selIcon.value == option['key'];
+                final color = Color(selColor.value);
+
+                return GestureDetector(
+                  onTap: () => selIcon.value = option['key'], // ✅ String
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? color.withOpacity(0.15)
+                          : AppTheme.background,
+                      borderRadius: BorderRadius.circular(10),
+                      border: isSelected
+                          ? Border.all(color: color, width: 1.5)
+                          : null,
+                    ),
+                    child: Icon(
+                      option['icon'], // ✅ already IconData
+                      color: isSelected ? color : AppTheme.textSecondary,
+                      size: 22,
+                    ),
                   ),
                 );
               },
@@ -324,7 +367,7 @@ void _showAddCategorySheet(BuildContext context, ExpenseController ec, {Category
                   } else {
                     existing.name = nameCtrl.text.trim();
                     existing.colorValue = selColor.value;
-                    existing.iconCodePoint = selIcon.value;
+                    existing.icon = selIcon.value;
                     existing.budgetLimit = budget;
                     existing.subItems = subs.toList();
                     ec.updateCategory(existing);
@@ -352,7 +395,7 @@ Widget _label(String t) => Padding(
   child: Text(t, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textSecondary, letterSpacing: 0.3)),
 );
 
-const List<Map<String, dynamic>> _iconOptions = [
+/*const List<Map<String, dynamic>> _iconOptions = [
   {'label':'Home',         'code': 0xe88a},
   {'label':'Food',         'code': 0xef55},
   {'label':'Shopping',     'code': 0xef69},
@@ -377,4 +420,31 @@ const List<Map<String, dynamic>> _iconOptions = [
   {'label':'Pet',          'code': 0xe91d},
   {'label':'Gift',         'code': 0xe8f6},
   {'label':'Coffee',       'code': 0xef6f},
+];*/
+
+const List<Map<String, dynamic>> _iconOptions = [
+  {'label': 'Home',          'key': 'home',          'icon': Icons.home},
+  {'label': 'Food',          'key': 'food',          'icon': Icons.fastfood},
+  {'label': 'Shopping',      'key': 'shopping',      'icon': Icons.shopping_cart},
+  {'label': 'Transport',     'key': 'transport',     'icon': Icons.directions_bus},
+  {'label': 'Health',        'key': 'health',        'icon': Icons.local_hospital},
+  {'label': 'Education',     'key': 'education',     'icon': Icons.school},
+  {'label': 'Savings',       'key': 'savings',       'icon': Icons.savings},
+  {'label': 'Loan',          'key': 'loan',          'icon': Icons.account_balance},
+  {'label': 'Give Loan',     'key': 'give_loan',     'icon': Icons.handshake},
+  {'label': 'Bike',          'key': 'bike',          'icon': Icons.two_wheeler},
+  {'label': 'Car',           'key': 'car',           'icon': Icons.directions_car},
+  {'label': 'Entertainment', 'key': 'entertainment', 'icon': Icons.movie},
+  {'label': 'Travel',        'key': 'travel',        'icon': Icons.flight},
+  {'label': 'Phone',         'key': 'phone',         'icon': Icons.phone_android},
+  {'label': 'Wifi',          'key': 'wifi',          'icon': Icons.wifi},
+  {'label': 'Electric',      'key': 'electric',      'icon': Icons.electric_bolt},
+  {'label': 'Water',         'key': 'water',         'icon': Icons.water_drop},
+  {'label': 'Gas',           'key': 'gas',           'icon': Icons.local_gas_station},
+  {'label': 'Sports',        'key': 'sports',        'icon': Icons.sports_soccer},
+  {'label': 'Kids',          'key': 'kids',          'icon': Icons.child_care},
+  {'label': 'Clothing',      'key': 'clothing',      'icon': Icons.checkroom},
+  {'label': 'Pet',           'key': 'pet',           'icon': Icons.pets},
+  {'label': 'Gift',          'key': 'gift',          'icon': Icons.card_giftcard},
+  {'label': 'Coffee',        'key': 'coffee',        'icon': Icons.coffee},
 ];

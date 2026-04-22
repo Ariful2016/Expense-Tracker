@@ -27,24 +27,42 @@ class ExpenseModelAdapter extends TypeAdapter<ExpenseModel> {
 
 class CategoryModelAdapter extends TypeAdapter<CategoryModel> {
   @override final int typeId = 1;
+
   @override
   CategoryModel read(BinaryReader reader) {
     final n = reader.readByte();
-    final f = <int, dynamic>{for (int i = 0; i < n; i++) reader.readByte(): reader.read()};
+    final f = <int, dynamic>{
+      for (int i = 0; i < n; i++) reader.readByte(): reader.read()
+    };
     return CategoryModel(
-      id: f[0] as String, name: f[1] as String, colorValue: f[2] as int,
-      iconCodePoint: f[3] as int, budgetLimit: f[4] as double? ?? 0,
-      isCustom: f[5] as bool? ?? false, subItems: (f[6] as List?)?.cast<String>(), order: 0,
+      id:          f[0] as String,
+      order:       f[1] as int? ?? 0,        // ✅ now reads order
+      name:        f[2] as String,
+      colorValue:  f[3] as int,
+      icon:        f[4] as String,
+      budgetLimit: f[5] as double? ?? 0,
+      isCustom:    f[6] as bool? ?? false,
+      subItems:    (f[7] as List?)?.cast<String>(),  // ✅ index 7
     );
   }
+
   @override
   void write(BinaryWriter writer, CategoryModel obj) {
-    writer..writeByte(7)
-      ..writeByte(0)..write(obj.id)..writeByte(1)..write(obj.name)
-      ..writeByte(2)..write(obj.colorValue)..writeByte(3)..write(obj.iconCodePoint)
-      ..writeByte(4)..write(obj.budgetLimit)..writeByte(5)..write(obj.isCustom)
-      ..writeByte(6)..write(obj.subItems);
+    writer..writeByte(8)                      // ✅ 8 fields now
+      ..writeByte(0)..write(obj.id)
+      ..writeByte(1)..write(obj.order)        // ✅ writes order
+      ..writeByte(2)..write(obj.name)
+      ..writeByte(3)..write(obj.colorValue)
+      ..writeByte(4)..write(obj.icon)
+      ..writeByte(5)..write(obj.budgetLimit)
+      ..writeByte(6)..write(obj.isCustom)
+      ..writeByte(7)..write(obj.subItems);    // ✅ index 7
   }
+
   @override int get hashCode => typeId.hashCode;
-  @override bool operator ==(Object o) => identical(this, o) || o is CategoryModelAdapter && runtimeType == o.runtimeType && typeId == o.typeId;
+  @override bool operator ==(Object o) =>
+      identical(this, o) ||
+          o is CategoryModelAdapter &&
+              runtimeType == o.runtimeType &&
+              typeId == o.typeId;
 }
